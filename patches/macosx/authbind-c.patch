@@ -1,0 +1,88 @@
+--- authbind.c.orig	2011-12-22 10:58:55.000000000 -0800
++++ authbind.c	2011-12-22 10:58:55.000000000 -0800
+@@ -38,13 +38,16 @@
+ }
+ 
+ static void usageerror(const char *msg) {
+-  fprintf(stderr,"usage error: %s\n",msg);
++  fprintf(stderr, "usage error: %s\n", msg);
+   printusage(stderr);
+   exit(-1);
+ }
+ 
+ static void mustsetenv(const char *var, const char *val) {
+-  if (setenv(var,val,1)) { perror("authbind: setenv"); exit(-1); }
++  if (setenv(var, val, 1)) {
++    perror("authbind: setenv");
++    exit(-1);
++  }
+ }
+ 
+ int main(int argc, char *const *argv) {
+@@ -68,34 +71,48 @@
+       exit(0);
+     }
+   }
+-  if (argc<2) usageerror("need program name");
+ 
+-  authbindlib= getenv(AUTHBINDLIB_VAR);
+-  if (!authbindlib) {
+-    authbindlib= LIBAUTHBIND;
+-    mustsetenv(AUTHBINDLIB_VAR,authbindlib);
++  if (argc < 2) {
++    usageerror("need program name");
++  }
++
++  authbindlib = getenv(AUTHBINDLIB_VAR);
++  if (authbindlib == NULL) {
++    authbindlib = LIBAUTHBIND;
++    mustsetenv(AUTHBINDLIB_VAR, authbindlib);
+   }
+     
+-  if ((expreload= getenv(PRELOAD_VAR))) {
+-    newpreload= malloc(strlen(expreload)+strlen(authbindlib)+2);
+-    strcpy(newpreload,expreload);
+-    strcat(newpreload,":");
+-    strcat(newpreload,authbindlib);
+-    preload= newpreload;
++  expreload = getenv(PRELOAD_VAR);
++  if (expreload != NULL) {
++    /* XXX Need to check for NULL return value */
++    newpreload = malloc(strlen(expreload) + strlen(authbindlib) + 2);
++    strcpy(newpreload, expreload);
++    strcat(newpreload, ":");
++    strcat(newpreload, authbindlib);
++    preload = newpreload;
++
+   } else {
+-    preload= authbindlib;
++    preload = authbindlib;
+   }
+-  mustsetenv(PRELOAD_VAR,preload);
++
++  mustsetenv(PRELOAD_VAR, preload);
++
++  /* XX Mac OSX hack */
++  mustsetenv("DYLD_FORCE_FLAT_NAMESPACE", "1");
+ 
+   if (depth > 1) {
+-    sprintf(buf,"%ld",depth-1);
+-    mustsetenv(AUTHBIND_LEVELS_VAR,buf);
++    memset(buf, 0, sizeof(buf));
++    sprintf(buf, "%ld", depth-1);
++    mustsetenv(AUTHBIND_LEVELS_VAR, buf);
++
+   } else if (depth == 0) {
+-    mustsetenv(AUTHBIND_LEVELS_VAR,"y");
++    mustsetenv(AUTHBIND_LEVELS_VAR, "y");
++
+   } else {
+     assert(depth==1);
+   }
+ 
+-  execvp(argv[1],argv+1);
+-  perror(argv[1]); exit(-1);
++  execvp(argv[1], argv+1);
++  perror(argv[1]);
++  exit(-1);
+ }

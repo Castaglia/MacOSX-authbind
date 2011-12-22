@@ -1,0 +1,87 @@
+.\" Hey, Emacs!  This is an -*- nroff -*- source file.
+.\" Authors: Ian Jackson
+.\" 
+.\" authbind is Copyright (C) 1998 Ian Jackson
+.\"
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2, or (at your option)
+.\" any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software Foundation,
+.\" Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. 
+.\"
+.\" $Id: authbind-helper.8,v 1.2 1998-08-30 03:07:35 ian Exp $
+.\"
+.TH AUTHBIND\-HELPER 8 "30th August 1998" "Debian Project" "Debian Linux manual"
+.br
+.SH NAME 
+authbind\-helper \- helper program to bind sockets to privileged ports without root
+.SH SYNOPSIS
+.BI /usr/lib/authbind/helper " addr\-hex port\-hex " < socket
+.SH DESCRIPTION
+.B helper
+is the program used by
+.BR libauthbind ,
+which is in turn used by
+.B authbind
+to allow programs which do not or should not run as root to bind to
+low-numbered ports in a controlled way.  See
+.BR authbind (1).
+.PP
+It may also be used standalone, i.e. without assistance from
+.BR authbind .
+Its standard input should be a TCP/IP socket, and it should be passed
+two arguments.
+.PP
+The arguments are the address and port number, respectively, to which
+the caller desires that the socket be bound.  They should be hex
+strings,
+.I without
+leading
+.BR 0x ,
+of exactly the right length (8 and 4 digits, respectively), being
+a pairs of hex digits for each byte in the address or port number when
+expressed in network byte order.
+.PP
+.B helper
+will not bind to ports 512 and onwards, because programs like
+.B rshd
+expect these to be used for outgoing connections, so allowing a user
+to bind to one of these would open up security hole(s).
+.SH EXIT STATUS
+.B helper
+will exit with code 0 on success.
+.PP
+If possible,
+.B helper
+will return an appropriate
+.B errno
+value as its exit status.  If this is not possible it may exit with
+status 255 or with an exit status corresponding to
+.B ENOSYS
+.RI ( "Function not implemented" ).
+.SH ACCESS CONTROL
+See
+.BR authbind (1)
+for details of the access control regime implemented by
+.BR helper .
+.SH SEE ALSO
+.BR authbind (1),
+.BR bind (2)
+.SH AUTHOR
+.B authbind
+and this manpage were written by Ian Jackson.  They are
+Copyright (C)1998
+by him and released under the GNU General Public Licence; there is NO
+WARRANTY.  See
+.B /usr/doc/authbind/copyright
+and
+.B /usr/doc/copyright/GPL
+for details.

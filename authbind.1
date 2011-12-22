@@ -1,0 +1,306 @@
+.\" Hey, Emacs!  This is an -*- nroff -*- source file.
+.\" Authors: Ian Jackson
+.\" 
+.\" authbind is Copyright (C) 1998 Ian Jackson
+.\"
+.\" This program is free software; you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation; either version 2, or (at your option)
+.\" any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program; if not, write to the Free Software Foundation,
+.\" Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA. 
+.\"
+.\" $Id: authbind.1,v 1.5 2003-06-29 22:01:21 ian Exp $
+.\"
+.TH AUTHBIND 1 "30th August 1998" "Debian Project" "Debian Linux manual"
+.SH NAME 
+authbind \- bind sockets to privileged ports without root
+.SH SYNOPSIS
+.BR authbind
+.RI [ options "] " program " [" argument " ...]"
+.SH DESCRIPTION
+.B authbind
+allows a program which does not or should not run as root to bind to
+low-numbered ports in a controlled way.
+.PP
+You must invoke the program using
+.BR authbind ".  " authbind
+will set up some environment variables, including an
+.BR LD_PRELOAD ,
+which will allow the program (including any subprocesses it may run)
+to bind to low-numbered (<512) ports if the system is configured to
+allow this.
+.SH OPTIONS
+.TP
+.B --deep
+Normally,
+.B authbind
+arranges for only the program which it directly invokes to be affected
+by its special version of
+.BR bind (2).
+If you specify
+.B --deep
+then all programs which that program invokes directly or indirectly
+will be affected, so long as they do not unset the environment
+variables set up by
+.BR authbind .
+.TP
+.BI --depth " levels"
+Causes
+.B authbind
+to affect programs which are
+.I levels
+deep in the calling graph.  The default is
+.BR "--depth 1" .
+.SH ACCESS CONTROL
+Access to low numbered ports is controlled by permissions and contents
+of files in a configuration area,
+.BR /etc/authbind .
+.PP
+Firstly,
+.BI /etc/authbind/byport/ port
+is tested.  If this file is accessible for execution to the calling
+user, according to
+.BR access (2),
+then binding to the port is authorised.  If the file can be seen not
+to exist (the existence check returns
+.BR ENOENT )
+then further tests will be used to find authorisation; otherwise,
+binding is not authorised, and the
+.B bind
+call will return with the
+.B errno
+value from the
+.BR access (2)
+call, usually
+.B EACCES
+.RI ( "Permission denied" ).
+.PP
+Secondly, if that test fails to resolve the matter,
+.BI /etc/authbind/byaddr/ addr : port
+is tested, in the same manner as above.
+.PP
+Thirdly, if the question is still unresolved, the file
+.BI /etc/authbind/byuid/ uid
+will be opened and read.  If the file does not exist then the binding
+is not authorised and
+.B bind
+will return
+.B EPERM
+.RI ( "Operation not permitted" ", or " "Not owner" ).
+If the file does exist it will be searched for a line of the form
+.nf
+.IB		addr / length : min\-port , max\-port
+.fi
+matching the request (ie, the initial
+.I length
+bits of
+.I addr
+match those in the proposed
+.B bind
+call, and the proposed port number lies is in the inclusive range
+specified.  If such a line is found then the binding is authorised.
+Otherwise it is not, and
+.B bind
+will fail with
+.B ENOENT
+.RI ( "No such file or directory" ).
+.PP
+In each case above,
+.TP
+.I port
+is the (local) TCP or UDP port number, expressed as an unsigned
+integer in the minimal non-zero number of digits, and
+.TP
+.I addr
+is the (local) IP address, as a dotted quad.
+.PP
+If a read error occurs, or the directory
+.B /etc/authbind
+cannot be accessed, then not only will
+.B bind
+fail, but an error message will be printed to stderr.  Unrecognised
+lines in
+.BI /etc/authbind/byuid/ uid
+files are silently ignored (as are lines whose
+.I addr
+has non-zero bits more than
+.I length
+from the top).
+.SH MECHANISM
+The shared library loaded using
+.B LD_PRELOAD
+overrides the
+.BR bind (2)
+system call.  When a program invoked via
+.B authbind
+calls
+.B bind
+to bind a socket to a low-numbered TCP/IP port, and if the program
+doesn't already have an effective uid of 0, the version of
+.B bind
+supposed by
+.B authbind
+forks and executes a setuid-root helper program.  For non-TCP/IP
+sockets, high-numbered ports, or programs which are already root,
+.B authbind
+passes the call to the original
+.BR bind (2)
+system call, which is found using
+.BR dlsym (3)
+with the handle
+.BR RTLD_NEXT .
+.PP
+.SH ERROR HANDLING
+Usually the normal C error handling mechanisms apply.  If
+.B authbind
+cannot find the program it has been asked to execute it will print a
+message to stderr and exit with code 255.
+.PP
+The helper program usually reports back to the shared library with an
+exit status containing an
+.B errno
+value which encodes whether the
+.B bind
+was permitted and successful.  This will be returned to the calling
+program in the usual way.
+.PP
+In the case of apparent configuration or other serious errors the
+library and/or the helper program may cause messages to be printed to
+the program's stderr, was well as returning -1 from
+.BR bind .
+.SH BUGS
+.B authbind
+currently only supports IPv4 sockets.  Programs which open other kinds
+of sockets will not benefit from
+.BR authbind ,
+but it won't get in their way.
+.PP
+The use of
+.B LD_PRELOAD
+makes an
+.B authbind
+installation specific to a particular C library.  This version is for
+GNU/Linux libc6 (glibc2).
+.PP
+.B authbind
+may not operate correctly with multithreaded programs.  It is
+inherently very difficult (if not impossible) to perform the kind of
+trickery that authbind does while preventing all undesirable
+interactions between authbind's activities and those of (say) a
+threading runtime system.
+.PP
+It is quite possible that
+.B authbind
+and other programs and facilities which use
+.B LD_PRELOAD
+may interfere with each other, causing unpredictable behaviour or even
+core dumps.
+.B authbind
+is known sometimes not to work correctly with
+.BR fakeroot ,
+for example (even supposing it could be determined what `correctly'
+means in this context).
+.PP
+.B authbind
+is ineffective with setuid programs, because they do not honour
+.B LD_PRELOAD
+references outside the system directories, for security reasons.  (In
+fact, setuid programs should not honour
+.B LD_PRELOAD
+at all.)
+Of course a setuid-root program does not need
+.BR authbind ,
+but it might be useful to apply it to program which are setuid to
+another user or setgid.  If the author or builder of such a programs
+wishes it to use authbind they could have it load the
+.B libauthbind
+library explicitly rather than via
+.BR LD_PRELOAD .
+.PP
+Some badly-written programs may have trouble because
+.B authbind
+spawns a child process `under their feet', causing (for example) a
+.BR fork (2)
+to happen and
+.B SIGCHLD
+signal to be delivered.  Programs should not rely on standard
+libraries not doing these things.
+.PP
+Ports from 512 to 1023 inclusive cannot be used with
+.B authbind
+because that would create a security hole, in conjection with
+.BR rshd .
+.PP
+The access control configuration scheme is somewhat strange.
+.SH FILES AND ENVIRONMENT VARIABLES
+.TP
+.I /usr/lib/authbind/libauthbind.so.1.0
+The shared library which
+.B authbind
+causes to be loaded using
+.BR LD_PRELOAD ,
+and which actually implements the diversion of
+.BR bind (2)
+to an external program.
+.TP
+.I LD_PRELOAD
+The variable used by the dynamic linker when starting dynamically
+linked programs and deciding which shared libraries to load and
+modifed by the
+.B authbind
+program to allow it to override the usual meaning of
+.BR bind (2) .
+.TP
+.I AUTHBIND_LIB
+If set, forces
+.B authbind
+to use its value as the path to the shared library to put in
+.BR LD_PRELOAD ,
+instead of the compiled-in value.  In any case, unless
+.B --deep
+was specified,
+.B authbind
+will set this variable to the name of the library actually added to
+.BR LD_PRELOAD ,
+so that the library can find and remove the right entry.
+.TP
+.I AUTHBIND_LEVELS
+This variable is set by
+.B authbind
+to the number of levels left from the
+.B --depth
+or
+.B --deep
+option, minus one.  It is decremented during
+.B _init
+by the library on each program call, and the library will remove
+itself from the
+.B LD_PRELOAD
+when it reaches zero.  The special value
+.B y
+means
+.B --deep
+was specified.
+.SH SEE ALSO
+.BR bind (2),
+.BR authbind\-helper (8),
+.BR dlsym (3),
+.BR ld.so (8)
+.SH AUTHOR
+.B authbind
+and this manpage were written by Ian Jackson.  They are
+Copyright (C)1998
+by him and released under the GNU General Public Licence; there is NO
+WARRANTY.  See
+.B /usr/doc/authbind/copyright
+and
+.B /usr/doc/copyright/GPL
+for details.

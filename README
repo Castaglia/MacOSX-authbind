@@ -1,5 +1,7 @@
 I needed to get the authbind utility, available from:
 
+  http://www.chiark.greenend.org.uk/ucgi/~ijackson/cvsweb/authbind/
+
 up and running on a Mac OSX box (specifically, Mac OSX 10.7 Lion).  I made
 a few changes to the source code; most of the changes are in the Makefile.
 
@@ -11,3 +13,8 @@ Here's the list of changes I made, and why:
   page recommendation.
 
   Added more logging to stderr of errors found in libauthbind, and the helper.
+
+The original files are marked as .orig; this distribution also contains a
+patches/macosx/ directory with the diffs, for easier inspection.  Note that
+I did not make the Makefile intelligent enough to Do The Right Thing(tm) for
+Linux platforms; it is currently specific to Mac OSX.

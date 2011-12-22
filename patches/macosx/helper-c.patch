@@ -1,0 +1,140 @@
+--- helper.c.orig	2011-12-22 10:58:55.000000000 -0800
++++ helper.c	2011-12-22 10:58:55.000000000 -0800
+@@ -36,27 +36,30 @@
+ 
+ static const char *rcsid="$Id: helper.c,v 1.5 1998-08-30 19:52:38 ian Exp $";
+ 
+-static void exiterrno(int e) {
+-  exit(e>0 && e<128 ? e : ENOSYS);
++static void exiterrno(int xerrno) {
++  exit(xerrno > 0 && xerrno < 128 ? xerrno : ENOSYS);
+ }
+ 
+-static void perrorfail(const char *m) {
+-  int e;
+-  e= errno;
+-  fprintf(stderr,"libauthbind's helper: %s: %s\n",m,strerror(e));
+-  exiterrno(e);
++static void perrorfail(const char *msg) {
++  int xerrno = errno;
++  fprintf(stderr, "libauthbind's helper: %s: %s\n", msg, strerror(xerrno));
++  exiterrno(xerrno);
+ }
+ 
+ static void badusage(void) {
+-  fprintf(stderr,"libauthbind's helper: bad usage\n (%s)\n",rcsid);
+-  exit(ENOSYS);
++  fprintf(stderr, "libauthbind's helper: bad usage\n (%s)\n", rcsid);
++  exit(EINVAL);
+ }
+ 
+ static struct sockaddr_in saddr;
+ 
+ static void authorised(void) {
+-  if (bind(0,&saddr,sizeof(saddr))) exiterrno(errno);
+-  else _exit(0);
++  if (bind(0, (struct sockaddr *) &saddr, sizeof(saddr))) {
++    perrorfail("libauthbind's helper: bind() failed");
++
++  } else {
++    _exit(0);
++  }
+ }
+ 
+ int main(int argc, const char *const *argv) {
+@@ -73,34 +76,63 @@
+   addr= strtoul(argv[1],&ep,16); if (*ep || addr&~0x0ffffffffUL) badusage();
+   port= strtoul(argv[2],&ep,16); if (*ep || port&~0x0ffffUL) badusage();
+   hport= htons(port);
+-  if (hport >= IPPORT_RESERVED/2) _exit(EPERM);
+ 
+-  if (chdir(CONFIGDIR)) perrorfail("chdir " CONFIGDIR);
++  if (hport >= IPPORT_RESERVED/2) {
++     _exit(EPERM);
++  }
++
++  if (chdir(CONFIGDIR)) {
++    perrorfail("chdir " CONFIGDIR);
++  }
++
++  fnbuf[sizeof(fnbuf)-1] = 0;
++  memset(&saddr, 0, sizeof(saddr));
++  saddr.sin_family = AF_INET;
++  saddr.sin_port = port;
++  saddr.sin_addr.s_addr = addr;
++
++  snprintf(fnbuf,sizeof(fnbuf)-1, "byport/%u", hport);
++  if (access(fnbuf, X_OK) == 0) {
++    authorised();
++  }
++
++  if (errno != ENOENT) {
++    fprintf(stderr, "libauthbind's helper: error checking %s: %s\n", fnbuf,
++      strerror(errno));
++    exiterrno(errno);
++  }
+ 
+-  fnbuf[sizeof(fnbuf)-1]= 0;
+-  memset(&saddr,0,sizeof(saddr));
+-  saddr.sin_family= AF_INET;
+-  saddr.sin_port= port;
+-  saddr.sin_addr.s_addr= addr;
++  np = inet_ntoa(saddr.sin_addr);
++  assert(np);
+ 
+-  snprintf(fnbuf,sizeof(fnbuf)-1,"byport/%u",hport);
+-  if (!access(fnbuf,X_OK)) authorised();
+-  if (errno != ENOENT) exiterrno(errno);
++  snprintf(fnbuf, sizeof(fnbuf)-1, "byaddr/%s:%u", np, hport);
++  if (access(fnbuf, X_OK) == 0) {
++    authorised();
++  }
++
++  if (errno != ENOENT) {
++    fprintf(stderr, "libauthbind's helper: error checking %s: %s\n", fnbuf,
++      strerror(errno));
++    exiterrno(errno);
++  }
+ 
+-  np= inet_ntoa(saddr.sin_addr); assert(np);
+-  snprintf(fnbuf,sizeof(fnbuf)-1,"byaddr/%s:%u",np,hport);
+-  if (!access(fnbuf,X_OK)) authorised();
+-  if (errno != ENOENT) exiterrno(errno);
++  uid = getuid();
++  if (uid == (uid_t)-1) {
++    perrorfail("getuid");
++  }
+ 
+-  uid= getuid(); if (uid==(uid_t)-1) perrorfail("getuid");
+-  snprintf(fnbuf,sizeof(fnbuf)-1,"byuid/%lu",(unsigned long)uid);
++  snprintf(fnbuf, sizeof(fnbuf)-1, "byuid/%lu", (unsigned long) uid);
+ 
+-  file= fopen(fnbuf,"r");
+-  if (!file) exiterrno(errno==ENOENT ? EPERM : errno);
++  file = fopen(fnbuf,"r");
++  if (file == NULL) {
++    fprintf(stderr, "libauthbind's helper: error opening %s: %s\n", fnbuf,
++      strerror(errno));
++    exiterrno(errno == ENOENT ? EPERM : errno);
++  }
+ 
+-  haddr= ntohl(addr);
++  haddr = ntohl(addr);
+ 
+-  while (fgets(fnbuf,sizeof(fnbuf)-1,file)) {
++  while (fgets(fnbuf, sizeof(fnbuf)-1, file)) {
+     nchar= -1;
+     sscanf(fnbuf," %u.%u.%u.%u/%u:%u,%u %n",
+ 	   &a1,&a2,&a3,&a4,&alen,&pmin,&pmax,&nchar);
+@@ -116,6 +148,10 @@
+     if ((haddr&thmask) != thaddr) continue;
+     authorised();
+   }
+-  if (ferror(file)) perrorfail("read per-uid file");
++
++  if (ferror(file)) {
++    perrorfail("read per-uid file");
++  }
++
+   _exit(ENOENT);
+ }

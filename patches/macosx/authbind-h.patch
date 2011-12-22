@@ -1,0 +1,14 @@
+--- authbind.h.orig	2011-12-22 10:58:55.000000000 -0800
++++ authbind.h	2011-12-22 10:58:55.000000000 -0800
+@@ -30,7 +30,10 @@
+ # define HELPER "/usr/local/lib/authbind/helper"
+ #endif
+ 
+-#define PRELOAD_VAR "LD_PRELOAD"
++#ifndef PRELOAD_VAR
++# define PRELOAD_VAR "LD_PRELOAD"
++#endif
++
+ #define AUTHBINDLIB_VAR "AUTHBIND_LIB"
+ #define AUTHBIND_LEVELS_VAR "AUTHBIND_LEVELS"
+ 
