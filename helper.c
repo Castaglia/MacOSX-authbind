@@ -55,7 +55,7 @@ static struct sockaddr_in saddr;
 
 static void authorised(void) {
   if (bind(0, (struct sockaddr *) &saddr, sizeof(saddr))) {
-    perrorfail("libauthbind's helper: bind() failed");
+    perrorfail("bind() failed");
 
   } else {
     _exit(0);
