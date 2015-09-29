@@ -34,8 +34,9 @@
 static const char *rcsid="$Id: libauthbind.c,v 1.8 2004-04-02 18:54:27 ian Exp $";
 
 #include "authbind.h"
+#ifdef __APPLE__
 #include "mach_override.h"
-#include "mach-o/dyld.h"
+#endif
 
 typedef void anyfn_type(void);
 typedef int bindfn_type(int fd, const struct sockaddr *addr, socklen_t addrlen);
@@ -145,23 +146,20 @@ static void removepreload(void) {
   return;
 }
 
-long *orig_bind_ptr;
-void (*orig_bind)() = 0;
 int mybind(int fd, const struct sockaddr *addr, socklen_t addrlen);
 
 void my_init(void) __attribute__ ((constructor));
 void my_init(void) {
-  _dyld_lookup_and_bind(
-    "_bind",
-    (void**) &orig_bind_ptr,
-    NULL);
-
-  orig_bind = (void (*)())orig_bind_ptr;
+#ifdef __APPLE__
+  anyfn_type *anyfn;
+  anyfn = find_any("bind");
+  old_bind = (bindfn_type *) anyfn;
 
   mach_override_ptr(
-    orig_bind_ptr,
+    anyfn,
     (void*)&mybind,
-    (void**)&orig_bind);
+    (void**)&old_bind);
+#endif
 
   char *levels;
   int levelno;
