@@ -49,7 +49,7 @@ STRIP		?= strip
 # from loading the libauthbind.dylib library if that library is only built
 # for e.g. the x86_64 arch.
 ARCH=-arch x86_64
-OSX_CFLAGS=-flat_namespace
+OSX_CFLAGS=
 OSX_LDFLAGS=$(ARCH) -dynamiclib -dynamic -flat_namespace
 
 OPTIMISE=-O2
