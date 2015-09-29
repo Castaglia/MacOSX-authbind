@@ -34,9 +34,6 @@
 static const char *rcsid="$Id: libauthbind.c,v 1.8 2004-04-02 18:54:27 ian Exp $";
 
 #include "authbind.h"
-#ifdef __APPLE__
-#include "mach_override.h"
-#endif
 
 typedef void anyfn_type(void);
 typedef int bindfn_type(int fd, const struct sockaddr *addr, socklen_t addrlen);
@@ -146,21 +143,8 @@ static void removepreload(void) {
   return;
 }
 
-int mybind(int fd, const struct sockaddr *addr, socklen_t addrlen);
-
-void my_init(void) __attribute__ ((constructor));
-void my_init(void) {
-#ifdef __APPLE__
-  anyfn_type *anyfn;
-  anyfn = find_any("bind");
-  old_bind = (bindfn_type *) anyfn;
-
-  mach_override_ptr(
-    anyfn,
-    (void*)&mybind,
-    (void**)&old_bind);
-#endif
-
+int _init(void);
+int _init(void) {
   char *levels;
   int levelno;
 
@@ -173,22 +157,23 @@ void my_init(void) {
    */
   levels= getenv(AUTHBIND_LEVELS_VAR);
   if (levels) {
-    if (levels[0]=='y') return;
+    if (levels[0]=='y') return 0;
     levelno= atoi(levels);
     if (levelno > 0) {
       levelno--;
       if (levelno > 0) sprintf(levels,"%d",levelno);
       else unsetenv(AUTHBIND_LEVELS_VAR);
-      return;
+      return 0;
     }
     unsetenv(AUTHBIND_LEVELS_VAR);
   }
   removepreload();
+  return 0;
 }
 
 static const int evilsignals[]= { SIGFPE, SIGILL, SIGSEGV, SIGBUS, 0 };
 
-int mybind(int fd, const struct sockaddr *addr, socklen_t addrlen) {
+int bind(int fd, const struct sockaddr *addr, socklen_t addrlen) {
   pid_t child, rchild;
   char portarg[5], addrarg[9];
   int r, status;

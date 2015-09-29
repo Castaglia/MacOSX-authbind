@@ -48,13 +48,13 @@ STRIP		?= strip
 # Android SDK provides i386 executables, which will fail from dyld failures
 # from loading the libauthbind.dylib library if that library is only built
 # for e.g. the x86_64 arch.
-ARCH=-arch x86_64
+ARCH=-arch i386 -arch x86_64
 OSX_CFLAGS=
 OSX_LDFLAGS=$(ARCH) -dynamiclib -dynamic -flat_namespace
 
 OPTIMISE=-O2
 LDFLAGS=$(OSX_LDFLAGS)
-LIBS=-ldl -ludis86
+LIBS=-ldl
 CFLAGS=$(ARCH) -g $(OPTIMISE) -D_REENTRANT \
  -Wall -Wwrite-strings -Wpointer-arith -Wimplicit -Wnested-externs \
  -Wmissing-prototypes -Wstrict-prototypes $(OSX_CFLAGS)
@@ -106,8 +106,8 @@ authbind: authbind.o
 helper: helper.o
 	$(CC) -o $@ $<
 
-$(LIBRARY): mach_override.o
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@$(LIBEXT) $@.c mach_override.o $(LIBS)
+$(LIBRARY):
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@$(LIBEXT) $@.c $(LIBS)
 
 clean distclean:
 	$(RM) $(TARGETS) *.o *~ ./#*# *.bak *.new core
