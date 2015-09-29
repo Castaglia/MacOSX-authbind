@@ -48,7 +48,7 @@ STRIP		?= strip
 # Android SDK provides i386 executables, which will fail from dyld failures
 # from loading the libauthbind.dylib library if that library is only built
 # for e.g. the x86_64 arch.
-ARCH=-arch i386 -arch x86_64
+ARCH=-arch x86_64
 OSX_CFLAGS=-flat_namespace
 OSX_LDFLAGS=$(ARCH) -dynamiclib -dynamic -flat_namespace
 
