@@ -54,7 +54,7 @@ OSX_LDFLAGS=$(ARCH) -dynamiclib -dynamic -flat_namespace
 
 OPTIMISE=-O2
 LDFLAGS=$(OSX_LDFLAGS)
-LIBS=-ldl
+LIBS=-ldl -ludis86
 CFLAGS=$(ARCH) -g $(OPTIMISE) -D_REENTRANT \
  -Wall -Wwrite-strings -Wpointer-arith -Wimplicit -Wnested-externs \
  -Wmissing-prototypes -Wstrict-prototypes $(OSX_CFLAGS)
@@ -106,8 +106,8 @@ authbind: authbind.o
 helper: helper.o
 	$(CC) -o $@ $<
 
-$(LIBRARY):
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@$(LIBEXT) $@.c $(LIBS)
+$(LIBRARY): mach_override.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@$(LIBEXT) $@.c mach_override.o $(LIBS)
 
 clean distclean:
 	$(RM) $(TARGETS) *.o *~ ./#*# *.bak *.new core
