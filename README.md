@@ -1,6 +1,6 @@
 I needed to get the authbind utility, available from:
 
-  http://www.chiark.greenend.org.uk/ucgi/~ijackson/cvsweb/authbind/
+  http://www.chiark.greenend.org.uk/ucgi/~ian/git/authbind.git/
 
 up and running on a Mac OSX box (specifically, Mac OSX 10.7 Lion).  I made
 a few changes to the source code; most of the changes are in the Makefile.
