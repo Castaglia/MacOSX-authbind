@@ -55,7 +55,7 @@ static struct sockaddr_in saddr;
 
 static void authorised(void) {
   if (bind(0, (struct sockaddr *) &saddr, sizeof(saddr))) {
-    perrorfail("libauthbind's helper: bind() failed");
+    perrorfail("bind() failed");
 
   } else {
     _exit(0);
@@ -63,7 +63,7 @@ static void authorised(void) {
 }
 
 int main(int argc, const char *const *argv) {
-  uid_t uid;
+  uid_t uid, euid;
   char fnbuf[100];
   char *ep;
   const char *np;
@@ -83,6 +83,18 @@ int main(int argc, const char *const *argv) {
 
   if (chdir(CONFIGDIR)) {
     perrorfail("chdir " CONFIGDIR);
+  }
+
+  euid = geteuid();
+  if (euid == (uid_t)-1) {
+    perrorfail("geteuid");
+  }
+
+  if (euid != (uid_t)0) {
+    fprintf(stderr, "Error: libauthbind's helper needs root privileges. Please run:\n");
+    fprintf(stderr, "    $ chmod u+s %s\n", argv[0]);
+    fprintf(stderr, "    $ sudo chown root %s\n\n", argv[0]);
+    exiterrno(EPERM);
   }
 
   fnbuf[sizeof(fnbuf)-1] = 0;
