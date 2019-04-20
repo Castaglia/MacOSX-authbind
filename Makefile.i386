@@ -43,15 +43,12 @@ INSTALL_PROGRAM ?= install -o $(INSTALL_USER) -g $(INSTALL_GROUP) -m 755 -s
 INSTALL_DIR	?= install -o $(INSTALL_USER) -g $(INSTALL_GROUP) -m 755 -d
 STRIP		?= strip
 
-# Note that the i386 architecture is deprecated for macOS.
-# If you have installed or updated Xcode recently, make of MacOSX-authbind will fail.
-# That's why, in the main Makefile the support for i386 has been removed.
-# However, if you still need to to build for both architectures, in order to
+# Note that it's necessary to build for both architectures, in order to
 # interoperate with executables of either arch.  For example, the Mac OSX
 # Android SDK provides i386 executables, which will fail from dyld failures
 # from loading the libauthbind.dylib library if that library is only built
-# for e.g. the x86_64 arch. In that case, please use Makefile.i386.
-ARCH=-arch x86_64
+# for e.g. the x86_64 arch.
+ARCH=-arch i386 -arch x86_64
 OSX_CFLAGS=-flat_namespace
 OSX_LDFLAGS=$(ARCH) -dynamiclib -dynamic -flat_namespace
 
