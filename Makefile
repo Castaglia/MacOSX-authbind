@@ -19,8 +19,6 @@
 # $Id: Makefile,v 1.10 2007-09-23 19:22:24 ian Exp $
 
 prefix=/usr/local
-#prefix=/Users/tj/local/authbind
-
 bin_dir=$(prefix)/bin
 lib_dir=$(prefix)/lib/authbind
 libexec_dir=$(lib_dir)
@@ -31,12 +29,9 @@ man1_dir=$(man_dir)/man1
 man8_dir=$(man_dir)/man8
 
 etc_dir=/etc/authbind
-#etc_dir=/Users/tj/local/authbind/etc/authbind
 
 INSTALL_USER=root
 INSTALL_GROUP=wheel
-#INSTALL_USER=tj
-#INSTALL_GROUP=staff
 
 INSTALL_FILE	?= install -o $(INSTALL_USER) -g $(INSTALL_GROUP) -m 644 
 INSTALL_PROGRAM ?= install -o $(INSTALL_USER) -g $(INSTALL_GROUP) -m 755 -s
@@ -51,7 +46,11 @@ STRIP		?= strip
 # Android SDK provides i386 executables, which will fail from dyld failures
 # from loading the libauthbind.dylib library if that library is only built
 # for e.g. the x86_64 arch. In that case, please use Makefile.i386.
+#
+# Note that if you are building for Mac M1 hosts, try using `arm64` instead
+# of `x86_64` here.
 ARCH=-arch x86_64
+
 OSX_CFLAGS=-flat_namespace
 OSX_LDFLAGS=$(ARCH) -dynamiclib -dynamic -flat_namespace
 
