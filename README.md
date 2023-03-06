@@ -13,6 +13,9 @@ To install this authbind on your Mac OSX, simply do:
 
 Then set up the authbind config files as one would normally do.
 
+> Note: if you're using a Mac with Apple's M-series chips, before running `make`,
+edit the `Makefile` by following the instructions [here](./Makefile#L50-53)
+
 Changes
 --------
 Here's the list of changes I made, and why:

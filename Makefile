@@ -50,6 +50,7 @@ STRIP		?= strip
 # Note that if you are building for Mac M1 hosts, try using `arm64` instead
 # of `x86_64` here.
 ARCH=-arch x86_64
+#ARCH=-arch arm64
 
 OSX_CFLAGS=-flat_namespace
 OSX_LDFLAGS=$(ARCH) -dynamiclib -dynamic -flat_namespace
