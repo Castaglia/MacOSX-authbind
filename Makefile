@@ -95,10 +95,26 @@ install: $(TARGETS) install-man
 #	ln -sf $(LIBTARGET) $(lib_dir)/$(LIBCANON)
 	$(INSTALL_DIR) $(etc_dir) $(etc_dir)/byport $(etc_dir)/byaddr $(etc_dir)/byuid
 
+uninstall:
+	rm -f \
+		$(bin_dir)/authbind \
+		$(libexec_dir)/helper \
+		$(libexec_dir)/$(LIBRARY)$(LIBEXT)
+	rm -df \
+		$(libexec_dir)
+
+uninstall-conf:
+	rm -rf $(etc_dir)
+
 install-man: $(MANPAGES_1) $(MANPAGES_8)
 	$(INSTALL_DIR) $(man1_dir) $(man8_dir)
 	$(INSTALL_FILE) $(MANPAGES_1) $(man1_dir)/.
 	$(INSTALL_FILE) $(MANPAGES_8) $(man8_dir)/.
+
+uninstall-man:
+	rm -f \
+		$(addprefix $(man1_dir)/,$(MANPAGES_1)) \
+		$(addprefix $(man8_dir)/,$(MANPAGES_8))
 
 .c.o:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
